@@ -33,7 +33,7 @@ Run the steady state cylinder validation experiment until `stop_time` using `mom
 scheme or formulation, with horizontal resolution `Nh`, viscosity `ν`, and cylinder radius `R`, on `arch`itecture.
 """
 
-function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 100, arch = CPU(), Nh = 250, ν = nu, 
+function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 10, arch = CPU(), Nh = 250, ν = nu, 
                                     advection = UpwindBiasedFifthOrder(), radius = R)
 
 
@@ -43,7 +43,7 @@ function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 100, a
                                            x = (-10, 10), y=(-10, 20), z = (0,1),
                                            topology = (Periodic, Bounded, Bounded))
 
-    immersed_grid = ImmersedBoundaryGrid(arch, underlying_grid, GridFittedBoundary(inside_cylinder))
+    immersed_grid = ImmersedBoundaryGrid(underlying_grid, GridFittedBoundary(inside_cylinder))
     
     # boundary conditions: inflow and outflow in y
     v_bc = OpenBoundaryCondition(1.0)
@@ -73,13 +73,19 @@ function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 100, a
     #mᵢ(x, y, z) = ifelse(inside_cylinder(x,y,z), 0., 1.0)
     set!(immersed_model, u=uᵢ, v=vᵢ, mass=mᵢ)
 
-    wall_clock = [time_ns()]
+    @show experiment_name = "cylinder_tracer_Nh_$(Nh)_$(typeof(immersed_model.advection).name.wrapper)"
 
-    function progress(sim)
+    simulation = Simulation(immersed_model, Δt=0.07 * underlying_grid.Δxᶜᵃᵃ, stop_time=stop_time)
+
+    wizard = TimeStepWizard(cfl=0.07, max_change=1.1, max_Δt=10.0, min_Δt=0.0001)
+    simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(100))
+
+    wall_clock = [time_ns()]
+    function progress_message(sim)
         @info(@sprintf("Iter: %d, time: %.1f, Δt: %.3f, wall time: %s, max|v|: %.2f",
                        sim.model.clock.iteration,
                        sim.model.clock.time,
-                       sim.Δt.Δt,
+                       sim.Δt,
                        prettytime(1e-9 * (time_ns() - wall_clock[1])),
                        maximum(abs, sim.model.velocities.v.data.parent)))
 
@@ -87,24 +93,20 @@ function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 100, a
 
         return nothing
     end
+    simulation.callbacks[:progress] = Callback(progress_message, IterationInterval(100))
 
-    @show experiment_name = "cylinder_tracer_Nh_$(Nh)_$(typeof(immersed_model.advection).name.wrapper)"
-
-    wizard = TimeStepWizard(cfl=0.07, Δt=0.07 * underlying_grid.Δxᶜᵃᵃ, max_change=1.1, max_Δt=10.0, min_Δt=0.0001)
-
-    simulation = Simulation(immersed_model, Δt=wizard, stop_time=stop_time, iteration_interval=100, progress=progress)
 
     # Output: primitive fields + computations
     u, v, w, pHY′, pNHS, mass  = merge(immersed_model.velocities, immersed_model.pressures, immersed_model.tracers)
     outputs = merge(immersed_model.velocities, immersed_model.pressures, immersed_model.tracers)
     
-    data_path = experiment_name
+    filename = experiment_name
  
     simulation.output_writers[:fields] =
             JLD2OutputWriter(immersed_model, outputs,
+                             filename = filename * ".jld2",
                              schedule = TimeInterval(output_time_interval),
-                             prefix = data_path,
-                             field_slicer = nothing,
+                             indices = (:,:,:),
                              overwrite_existing = true)
 
     @info "Running a simulation of an steady state cylinder..."
@@ -112,7 +114,7 @@ function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 100, a
     start_time = time_ns()
 
     run!(simulation)
-    return experiment_name 
+    return experiment_name
 end
 
 """
