@@ -20,8 +20,8 @@ using Oceananigans.ImmersedBoundaries: ImmersedBoundaryGrid, GridFittedBoundary
 ##### The Steady State Cylinder
 #####
 
-const R = 1.      # radius
-const Re = 40.    # Reynolds number, Re < 40 --> Steady State
+const R = 2.      # radius
+const Re = 200.    # Reynolds number, Re < 40 --> Steady State
 const nu = 2*R/Re  # viscosity
 
 
@@ -178,25 +178,25 @@ function visualize_cylinder_steadystate(experiment_name)
         u_plot = heatmap(xu, yu, clamp.(ui, -1, 1)'; color = :balance, size = (500,700), 
                             guidefontsize = 14, titlefont=14, top_margin = -10.0mm, bottom_margin = -10.0mm,
                             legendfont = 10, tickfont = 8, kwargs...)
-        plot!(circle_shape(0,0,1),seriestype=[:shape,],linecolor=:black,
+        plot!(circle_shape(0,0,R),seriestype=[:shape,],linecolor=:black,
                             legend=false, fillalpha=0)
         
         v_plot = heatmap(xv, yv, clamp.(vi, -1, 1)'; color = :balance, size = (500,700), 
                             guidefontsize = 14, titlefont=14, top_margin = -10.0mm, bottom_margin = -10.0mm,
                             legendfont = 10, tickfont = 8, kwargs...)
-        plot!(circle_shape(0,0,1),seriestype=[:shape,],linecolor=:black,
+        plot!(circle_shape(0,0,R),seriestype=[:shape,],linecolor=:black,
                             legend=false, fillalpha=0)
         
         p_plot = heatmap(xp, yp, clamp.(pin, -1, 1)'; color = :balance, size = (500,700), 
                             guidefontsize = 14, titlefont=14, top_margin = -10.0mm, bottom_margin = -10.0mm,
                             legendfont = 10, tickfont = 8, kwargs...)
-        plot!(circle_shape(0,0,1),seriestype=[:shape,],linecolor=:black,
+        plot!(circle_shape(0,0,R),seriestype=[:shape,],linecolor=:black,
                             legend=false, fillalpha=0)
 
         m_plot = heatmap(xm, ym, clamp.(mi, -1, 1)'; color = :thermal, size = (500,700), 
                             guidefontsize = 14, titlefont=14, top_margin = -10.0mm, bottom_margin = -10.0mm,
                             legendfont = 10, tickfont = 8, kwargs...)
-        plot!(circle_shape(0,0,1),seriestype=[:shape,],linecolor=:black,
+        plot!(circle_shape(0,0,R),seriestype=[:shape,],linecolor=:black,
                             legend=false, fillalpha=0)
   
         δlim = 1.0
@@ -383,8 +383,6 @@ function analyze_cylinder_steadystate(experiment_name)
 end
 
 advection = CenteredSecondOrder()
-experiment_name = run_cylinder_steadystate(Nh = 256, advection = advection, radius = R, stop_time = 10, ν = nu)
+experiment_name = run_cylinder_steadystate(Nh = 256, advection = advection, radius = R, stop_time = 20, ν = nu)
 visualize_cylinder_steadystate(experiment_name)
 analyze_cylinder_steadystate(experiment_name)
-
-
