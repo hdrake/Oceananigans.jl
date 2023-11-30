@@ -21,7 +21,7 @@ using Oceananigans.ImmersedBoundaries: ImmersedBoundaryGrid, GridFittedBoundary
 #####
 
 const R = 2.      # radius
-const Re = 200.    # Reynolds number, Re < 40 --> Steady State
+const Re = 400.    # Reynolds number, Re < 40 --> Steady State
 const nu = 2*R/Re  # viscosity
 
 
@@ -37,7 +37,7 @@ function run_cylinder_steadystate(; output_time_interval = 1, stop_time = 10, ar
                                     advection = UpwindBiasedFifthOrder(), radius = R)
 
 
-    inside_cylinder(x, y, z) = (x^2 + y^2) <= radius # immersed solid
+    inside_cylinder(x, y, z) = (x^2 + y^2) <= radius^2 # immersed solid
 
     underlying_grid = RectilinearGrid(arch, size=(Nh, Int(3*Nh/2), 1), halo=(3, 3, 3),
                                            x = (-10, 10), y=(-10, 20), z = (0,1),
@@ -383,6 +383,6 @@ function analyze_cylinder_steadystate(experiment_name)
 end
 
 advection = CenteredSecondOrder()
-experiment_name = run_cylinder_steadystate(Nh = 256, advection = advection, radius = R, stop_time = 20, ν = nu)
+experiment_name = run_cylinder_steadystate(Nh = 256, advection = advection, radius = R, stop_time = 50, ν = nu)
 visualize_cylinder_steadystate(experiment_name)
 analyze_cylinder_steadystate(experiment_name)
